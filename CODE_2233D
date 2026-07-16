@@ -1,0 +1,136 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    static class FastScanner {
+        private final InputStream in;
+        private final byte[] buffer = new byte[1 << 16];
+        private int ptr = 0, len = 0;
+
+        FastScanner(InputStream is) {
+            in = is;
+        }
+
+        private int read() throws IOException {
+            if (ptr >= len) {
+                len = in.read(buffer);
+                ptr = 0;
+                if (len <= 0) return -1;
+            }
+            return buffer[ptr++];
+        }
+
+        int nextInt() throws IOException {
+            int c;
+            do {
+                c = read();
+            } while (c <= ' ' && c != -1);
+            int sign = 1;
+            if (c == '-') {
+                sign = -1;
+                c = read();
+            }
+            int val = 0;
+            while (c > ' ') {
+                val = val * 10 + (c - '0');
+                c = read();
+            }
+            return val * sign;
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        FastScanner fs = new FastScanner(System.in);
+        StringBuilder out = new StringBuilder();
+        int t = fs.nextInt();
+
+        while (t-- > 0) {
+            int n = fs.nextInt();
+            int[] a = new int[n];
+            for (int i = 0; i < n; i++) a[i] = fs.nextInt();
+
+            HashMap<Integer, Integer> first = new HashMap<>();
+            HashMap<Integer, Integer> last = new HashMap<>();
+            HashSet<Integer> seen = new HashSet<>();
+            ArrayList<Integer> order = new ArrayList<>();
+
+            for (int i = 0; i < n; i++) {
+                int x = a[i];
+                if (!seen.contains(x)) {
+                    seen.add(x);
+                    order.add(x);
+                    first.put(x, i);
+                }
+                last.put(x, i);
+            }
+
+            int segments = 0;
+            int maxLast = -1;
+            for (int x : order) {
+                int l = first.get(x), r = last.get(x);
+                maxLast = Math.max(maxLast, r);
+                if (l > segments) segments = l;
+                if (segments != maxLast) {
+                    // no-op, just keeps logic clear
+                }
+            }
+
+            ArrayList<Integer> starts = new ArrayList<>();
+            ArrayList<Integer> ends = new ArrayList<>();
+            int i = 0;
+            while (i < n) {
+                int j = i;
+                int mx = last.get(a[i]);
+                while (j <= mx) {
+                    mx = Math.max(mx, last.get(a[j]));
+                    j++;
+                }
+                starts.add(i);
+                ends.add(mx);
+                i = mx + 1;
+            }
+
+            if (starts.size() == 1) {
+                out.append("YES\n");
+                continue;
+            }
+
+            if (starts.size() > 2) {
+                out.append("NO\n");
+                continue;
+            }
+
+            int s1 = starts.get(0), e1 = ends.get(0);
+            int s2 = starts.get(1), e2 = ends.get(1);
+
+            int l = Math.min(s1, s2);
+            int r = Math.max(e1, e2);
+
+            HashMap<Integer, Integer> cnt = new HashMap<>();
+            for (int idx = l; idx <= r; idx++) {
+                cnt.put(a[idx], cnt.getOrDefault(a[idx], 0) + 1);
+            }
+
+            boolean ok = true;
+            for (int x : order) {
+                int lf = first.get(x), rt = last.get(x);
+                if (lf < l || rt > r) {
+                    if (!(lf >= l && rt <= r)) {
+                        ok = false;
+                        break;
+                    }
+                }
+                int c = cnt.getOrDefault(x, 0);
+                if (c == 0) continue;
+                if (rt - lf + 1 != c) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            out.append(ok ? "YES\n" : "NO\n");
+        }
+
+        System.out.print(out.toString());
+    }
+}
