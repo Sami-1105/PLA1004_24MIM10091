@@ -1,0 +1,76 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    static class FastScanner {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        StringTokenizer st;
+
+        String next() throws IOException {
+            while (st == null || !st.hasMoreElements()) {
+                st = new StringTokenizer(br.readLine());
+            }
+            return st.nextToken();
+        }
+
+        int nextInt() throws IOException {
+            return Integer.parseInt(next());
+        }
+    }
+
+    static int n;
+    static long[] h;
+
+    public static void main(String[] args) throws Exception {
+        FastScanner fs = new FastScanner();
+        StringBuilder out = new StringBuilder();
+
+        int T = fs.nextInt();
+
+        while (T-- > 0) {
+            n = fs.nextInt();
+            h = new long[n];
+            for (int i = 0; i < n; i++) h[i] = fs.nextInt();
+
+            for (int empty = 0; empty < n; empty++) {
+                long[] w = new long[n];
+                w[empty] = 0;
+
+                // clockwise
+                int cur = (empty + 1) % n;
+                while (cur != empty) {
+                    int prev = (cur - 1 + n) % n;
+                    long lim = h[prev];
+                    if (prev == empty)
+                        w[cur] = lim;
+                    else
+                        w[cur] = Math.max(w[prev], lim);
+                    cur = (cur + 1) % n;
+                }
+
+                // counter-clockwise relaxation
+                boolean changed = true;
+                while (changed) {
+                    changed = false;
+                    for (int k = 0; k < n; k++) {
+                        int i = (empty - 1 - k + n * 2) % n;
+                        if (i == empty) continue;
+                        int nxt = (i + 1) % n;
+                        long need = Math.max(w[nxt], h[i]);
+                        if (need > w[i]) {
+                            w[i] = need;
+                            changed = true;
+                        }
+                    }
+                }
+
+                long ans = 0;
+                for (long x : w) ans += x;
+                out.append(ans).append(" ");
+            }
+            out.append('\n');
+        }
+
+        System.out.print(out);
+    }
+}
