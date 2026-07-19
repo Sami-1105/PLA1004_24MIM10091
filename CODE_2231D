@@ -1,0 +1,83 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    static final long NEG = -(long)1e18;
+
+    public static void main(String[] args) throws Exception {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        StringBuilder out = new StringBuilder();
+
+        int T = Integer.parseInt(br.readLine());
+
+        while (T-- > 0) {
+            int n = Integer.parseInt(br.readLine());
+
+            String s = br.readLine();
+
+            long[] a = new long[n];
+            long[] c = new long[n];
+
+            StringTokenizer st = new StringTokenizer(br.readLine());
+            for (int i = 0; i < n; i++) {
+                a[i] = Long.parseLong(st.nextToken());
+            }
+
+            st = new StringTokenizer(br.readLine());
+            for (int i = 0; i < n; i++) {
+                c[i] = Long.parseLong(st.nextToken());
+            }
+
+            long pref = 0;
+            long mx = NEG;
+            boolean ok = true;
+
+            for (int i = 0; i < n && ok; i++) {
+
+                if (c[i] < mx) {
+                    ok = false;
+                    break;
+                }
+
+                if (s.charAt(i) == '1') {
+                    pref += a[i];
+
+                    if (pref > mx) {
+                        if (pref != c[i]) {
+                            ok = false;
+                            break;
+                        }
+                    } else {
+                        if (c[i] != mx) {
+                            ok = false;
+                            break;
+                        }
+                    }
+
+                    mx = c[i];
+                } else {
+                    if (c[i] > mx) {
+                        a[i] = c[i] - pref;
+                        pref = c[i];
+                        mx = c[i];
+                    } else {
+                        a[i] = NEG - pref;
+                        pref = NEG;
+                    }
+                }
+            }
+
+            if (!ok) {
+                out.append("No\n");
+            } else {
+                out.append("Yes\n");
+                for (int i = 0; i < n; i++) {
+                    out.append(a[i]).append(" ");
+                }
+                out.append("\n");
+            }
+        }
+
+        System.out.print(out);
+    }
+}
