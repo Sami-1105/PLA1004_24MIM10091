@@ -1,0 +1,125 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    static class FastScanner {
+        private final InputStream in = System.in;
+        private final byte[] buffer = new byte[1 << 16];
+        private int ptr = 0, len = 0;
+
+        private int read() throws IOException {
+            if (ptr >= len) {
+                len = in.read(buffer);
+                ptr = 0;
+                if (len <= 0) return -1;
+            }
+            return buffer[ptr++];
+        }
+
+        long nextLong() throws IOException {
+            int c;
+            do {
+                c = read();
+            } while (c <= ' ');
+
+            long val = 0;
+            while (c > ' ') {
+                val = val * 10 + (c - '0');
+                c = read();
+            }
+            return val;
+        }
+
+        int nextInt() throws IOException {
+            return (int) nextLong();
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        FastScanner fs = new FastScanner();
+        StringBuilder ans = new StringBuilder();
+
+        int t = fs.nextInt();
+
+        while (t-- > 0) {
+
+            int n = fs.nextInt();
+            long[] a = new long[n];
+
+            for (int i = 0; i < n; i++) {
+                a[i] = fs.nextLong();
+            }
+
+            /*
+             * dp[i] = minimum cost to partition a[0 ... i-1]
+             *
+             * For every ending position r, we find the minimum
+             * of the segment [l ... r].
+             */
+
+            long[] dp = new long[n + 1];
+            Arrays.fill(dp, Long.MAX_VALUE / 4);
+            dp[0] = 0;
+
+            /*
+             * Monotonic stack:
+             * stores pairs (minimum value, earliest valid start)
+             */
+            ArrayDeque<long[]> stack = new ArrayDeque<>();
+
+            for (int r = 0; r < n; r++) {
+
+                ArrayList<long[]> current = new ArrayList<>();
+
+                // Add new element as a possible minimum
+                current.add(new long[]{a[r], r});
+
+                for (long[] p : stack) {
+                    long mn = Math.min(p[0], a[r]);
+
+                    if (current.get(current.size() - 1)[0] == mn) {
+                        current.get(current.size() - 1)[1] =
+                                Math.min(current.get(current.size() - 1)[1], p[1]);
+                    } else {
+                        current.add(new long[]{mn, p[1]});
+                    }
+                }
+
+                stack.clear();
+
+                for (long[] p : current) {
+                    stack.addLast(p);
+                }
+
+                /*
+                 * For every possible minimum range:
+                 * cost = ceil(length / minimum)
+                 *
+                 * The following direct transitions are sufficient
+                 * for the easy version.
+                 */
+
+                long best = Long.MAX_VALUE / 4;
+
+                for (long[] p : stack) {
+
+                    long minimum = p[0];
+                    int start = (int) p[1];
+
+                    long length = r - start + 1L;
+                    long cost = (length + minimum - 1) / minimum;
+
+                    best = Math.min(best, dp[start] + cost);
+                }
+
+                dp[r + 1] = best;
+            }
+
+            ans.append(dp[n]).append('\n');
+        }
+
+        System.out.print(ans);
+    }
+}
