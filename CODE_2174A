@@ -1,0 +1,59 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        int T = Integer.parseInt(br.readLine());
+
+        while (T-- > 0) {
+            String s = br.readLine();
+            String t = br.readLine();
+
+            int[] cnt = new int[26];
+
+            for (char c : t.toCharArray())
+                cnt[c - 'a']++;
+
+            boolean ok = true;
+            for (char c : s.toCharArray()) {
+                cnt[c - 'a']--;
+                if (cnt[c - 'a'] < 0) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            if (!ok) {
+                System.out.println("Impossible");
+                continue;
+            }
+
+            StringBuilder rem = new StringBuilder();
+            for (int i = 0; i < 26; i++) {
+                while (cnt[i]-- > 0)
+                    rem.append((char) ('a' + i));
+            }
+
+            StringBuilder ans = new StringBuilder();
+
+            int i = 0, j = 0;
+            while (i < s.length()) {
+                while (j < rem.length() && rem.charAt(j) < s.charAt(i)) {
+                    ans.append(rem.charAt(j));
+                    j++;
+                }
+                ans.append(s.charAt(i));
+                i++;
+            }
+
+            while (j < rem.length()) {
+                ans.append(rem.charAt(j));
+                j++;
+            }
+
+            System.out.println(ans);
+        }
+    }
+}
