@@ -1,0 +1,66 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    static class FastScanner {
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        StringTokenizer st;
+
+        String next() throws IOException {
+            while (st == null || !st.hasMoreTokens()) {
+                st = new StringTokenizer(br.readLine());
+            }
+            return st.nextToken();
+        }
+
+        int nextInt() throws IOException {
+            return Integer.parseInt(next());
+        }
+
+        long nextLong() throws IOException {
+            return Long.parseLong(next());
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        FastScanner fs = new FastScanner();
+        StringBuilder ans = new StringBuilder();
+
+        int T = fs.nextInt();
+
+        while (T-- > 0) {
+            int n = fs.nextInt();
+            int k = fs.nextInt();
+
+            Long[] a = new Long[n];
+            long total = 0;
+
+            for (int i = 0; i < n; i++) {
+                a[i] = fs.nextLong();
+                total += a[i];
+            }
+
+            Arrays.sort(a, Collections.reverseOrder());
+
+            int[] b = new int[k];
+            for (int i = 0; i < k; i++) {
+                b[i] = fs.nextInt();
+            }
+            Arrays.sort(b);
+
+            long free = 0;
+            int used = 0;
+
+            for (int x : b) {
+                if (used + x > n) break;
+                used += x;
+                free += a[used - 1];
+            }
+
+            ans.append(total - free).append('\n');
+        }
+
+        System.out.print(ans);
+    }
+}
