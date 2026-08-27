@@ -1,0 +1,234 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    static final int MOD = 998244353;
+
+    static long modPow(long a, long e) {
+        long res = 1;
+        while (e > 0) {
+            if ((e & 1) == 1)
+                res = res * a % MOD;
+            a = a * a % MOD;
+            e >>= 1;
+        }
+        return res;
+    }
+
+    static long[] fact;
+    static long[] invFact;
+
+    static void initComb(int N) {
+        fact = new long[N + 1];
+        invFact = new long[N + 1];
+
+        fact[0] = 1;
+
+        for (int i = 1; i <= N; i++) {
+            fact[i] = fact[i - 1] * i % MOD;
+        }
+
+        invFact[N] = modPow(fact[N], MOD - 2);
+
+        for (int i = N; i >= 1; i--) {
+            invFact[i - 1] = invFact[i] * i % MOD;
+        }
+    }
+
+    static long C(int n, int r) {
+        if (r < 0 || r > n)
+            return 0;
+
+        return fact[n] * invFact[r] % MOD
+                * invFact[n - r] % MOD;
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        FastScanner fs = new FastScanner(System.in);
+
+        int n = fs.nextInt();
+        int m = fs.nextInt();
+        int k = fs.nextInt();
+
+        int total = n + m;
+
+        initComb(Math.max(n, m));
+
+        /*
+         * dp[i][j] is not stored as a 2D table.
+         *
+         * dp[j] = number of ways to color i objects
+         * using exactly j colors among colors 2...k.
+         *
+         * Transition:
+         *
+         * dpNew[j] =
+         *      dp[j] * j
+         *    + dp[j-1] * (k-j)
+         *
+         * This is the standard surjection DP.
+         */
+
+        long[] dp = new long[k];
+        long[] ndp = new long[k];
+
+        dp[0] = 1;
+
+        /*
+         * We need dp[len][k-1] for every possible len.
+         */
+        long[] ways = new long[total + 1];
+
+        ways[0] = (k == 1 ? 1 : 0);
+
+        for (int len = 1; len <= total; len++) {
+
+            Arrays.fill(ndp, 0);
+
+            int maxJ = Math.min(len, k - 1);
+
+            for (int j = 1; j <= maxJ; j++) {
+
+                // Put the new object into one of j existing colors.
+                long same = dp[j] * j % MOD;
+
+                // Put it into one of the new colors.
+                long fresh = dp[j - 1] * (k - j) % MOD;
+
+                ndp[j] = (same + fresh) % MOD;
+            }
+
+            long[] temp = dp;
+            dp = ndp;
+            ndp = temp;
+
+            if (k - 1 < dp.length) {
+                ways[len] = dp[k - 1];
+            }
+        }
+
+        long[] ans = new long[total];
+
+        /*
+         * Consider the cells having color 1.
+         *
+         * They form a rectangle consisting of:
+         *
+         *      x rows × y columns
+         *
+         * where x >= 1 and y >= 1.
+         *
+         * Choose those rows and columns:
+         *
+         *      C(n,x) * C(m,y)
+         *
+         * The remaining n+m-x-y rows/columns receive
+         * colors 2...k, and every one of these colors
+         * must appear.
+         *
+         * Number of ways:
+         *
+         *      ways[n+m-x-y]
+         *
+         * The minimum number of operations is:
+         *
+         *      n+m-max(x,y)
+         *
+         * because among the x rows and y columns of color 1,
+         * max(x,y) operations can be saved.
+         */
+
+        for (int x = 1; x <= n; x++) {
+
+            long chooseX = C(n, x);
+
+            for (int y = 1; y <= m; y++) {
+
+                int remaining = total - x - y;
+
+                if (remaining < k - 1)
+                    continue;
+
+                long chooseY = C(m, y);
+
+                long cur = chooseX * chooseY % MOD;
+                cur = cur * ways[remaining] % MOD;
+
+                int value = total - Math.max(x, y);
+
+                ans[value] += cur;
+
+                if (ans[value] >= MOD)
+                    ans[value] -= MOD;
+            }
+        }
+
+        StringBuilder out = new StringBuilder();
+
+        for (int value = Math.min(n, m);
+             value <= total - 1;
+             value++) {
+
+            out.append(ans[value]).append(' ');
+        }
+
+        System.out.println(out);
+    }
+
+    // ------------------------------------------------------------
+    // Fast Scanner
+    // ------------------------------------------------------------
+
+    static class FastScanner {
+
+        private final InputStream in;
+        private final byte[] buffer = new byte[1 << 16];
+
+        private int ptr = 0;
+        private int len = 0;
+
+        FastScanner(InputStream is) {
+            in = is;
+        }
+
+        private int read() throws IOException {
+
+            if (ptr >= len) {
+                len = in.read(buffer);
+                ptr = 0;
+
+                if (len <= 0)
+                    return -1;
+            }
+
+            return buffer[ptr++];
+        }
+
+        int nextInt() throws IOException {
+
+            int c;
+
+            do {
+                c = read();
+            } while (c <= ' ');
+
+            int sign = 1;
+
+            if (c == '-') {
+                sign = -1;
+                c = read();
+            }
+
+            int res = 0;
+
+            while (c > ' ') {
+                res = res * 10 + (c - '0');
+                c = read();
+            }
+
+            return res * sign;
+        }
+    }
+}
