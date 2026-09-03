@@ -1,0 +1,121 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    // Returns the minimum dyadic decomposition of [l, r)
+    static ArrayList<Integer> decompose(long l, long r) {
+        ArrayList<Integer> parts = new ArrayList<>();
+
+        while (l < r) {
+            long remaining = r - l;
+
+            // Largest power of 2 that can start at l
+            long size;
+
+            if (l == 0) {
+                size = Long.highestOneBit(remaining);
+            } else {
+                size = l & -l; // largest power of 2 dividing l
+
+                // It must also fit inside [l, r)
+                while (size > remaining) {
+                    size >>= 1;
+                }
+            }
+
+            parts.add((int) size);
+            l += size;
+        }
+
+        return parts;
+    }
+
+    static int log2(int x) {
+        return Integer.numberOfTrailingZeros(x);
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        FastScanner fs = new FastScanner(System.in);
+        StringBuilder out = new StringBuilder();
+
+        int t = fs.nextInt();
+
+        while (t-- > 0) {
+
+            long l1 = fs.nextLong();
+            long r1 = fs.nextLong();
+            long l2 = fs.nextLong();
+            long r2 = fs.nextLong();
+
+            ArrayList<Integer> x = decompose(l1, r1);
+            ArrayList<Integer> y = decompose(l2, r2);
+
+            long answer = 0;
+
+            for (int sx : x) {
+                for (int sy : y) {
+
+                    int px = log2(sx);
+                    int py = log2(sy);
+
+                    // If side lengths are 2^px and 2^py,
+                    // number of squares required is 2^|px-py|.
+                    answer += 1L << Math.abs(px - py);
+                }
+            }
+
+            out.append(answer).append('\n');
+        }
+
+        System.out.print(out);
+    }
+
+    // Fast input
+    static class FastScanner {
+
+        private final InputStream in;
+        private final byte[] buffer = new byte[1 << 16];
+        private int ptr = 0;
+        private int len = 0;
+
+        FastScanner(InputStream in) {
+            this.in = in;
+        }
+
+        private int read() throws IOException {
+            if (ptr >= len) {
+                len = in.read(buffer);
+                ptr = 0;
+
+                if (len <= 0) {
+                    return -1;
+                }
+            }
+
+            return buffer[ptr++];
+        }
+
+        long nextLong() throws IOException {
+            int c;
+
+            do {
+                c = read();
+            } while (c <= ' ');
+
+            long result = 0;
+
+            while (c > ' ') {
+                result = result * 10 + (c - '0');
+                c = read();
+            }
+
+            return result;
+        }
+
+        int nextInt() throws IOException {
+            return (int) nextLong();
+        }
+    }
+}
