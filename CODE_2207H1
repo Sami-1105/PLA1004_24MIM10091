@@ -1,0 +1,459 @@
+import java.io.*;
+import java.util.*;
+
+public class Main {
+
+    static final int INF = 1_000_000_000;
+
+    static BufferedReader br =
+            new BufferedReader(new InputStreamReader(System.in));
+
+    static StringTokenizer st;
+
+    static int getInt() throws Exception {
+        while (st == null || !st.hasMoreTokens()) {
+            String line = br.readLine();
+            if (line == null) System.exit(0);
+            st = new StringTokenizer(line);
+        }
+
+        int x = Integer.parseInt(st.nextToken());
+
+        if (x == -1) {
+            System.exit(0);
+        }
+
+        return x;
+    }
+
+    // ------------------------------------------------------------
+    // Query
+    // ------------------------------------------------------------
+
+    static int ask(int[] q) throws Exception {
+
+        int clip = 100000;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("? ");
+
+        for (int i = 1; i < q.length; i++) {
+            int v = Math.max(-clip, Math.min(clip, q[i]));
+
+            // EXACTLY like official:
+            // max(-clip,min(clip,Q[i])) + clip + 1
+            sb.append(v + clip + 1).append(' ');
+        }
+
+        System.out.println(sb);
+        System.out.flush();
+
+        return getInt() - clip - 1;
+    }
+
+    // ------------------------------------------------------------
+    // Min-Max Tree
+    // ------------------------------------------------------------
+
+    static class MMT {
+
+        int L, R;
+
+        ArrayList<MMT> subdivisions;
+
+        // true  = max
+        // false = min
+        boolean up;
+
+        boolean leaf;
+
+        MMT(int L, int R,
+            ArrayList<MMT> subdivisions,
+            boolean up) {
+
+            this.L = L;
+            this.R = R;
+            this.subdivisions = subdivisions;
+            this.up = up;
+            this.leaf = (L == R);
+        }
+
+        int eval(int[] x) {
+
+            if (leaf) {
+                return x[L];
+            }
+
+            int ret;
+
+            if (up) {
+                ret = -INF;
+            } else {
+                ret = INF;
+            }
+
+            for (MMT child : subdivisions) {
+
+                int val = child.eval(x);
+
+                if (up) {
+                    ret = Math.max(ret, val);
+                } else {
+                    ret = Math.min(ret, val);
+                }
+            }
+
+            return ret;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Binary search forward
+    // ------------------------------------------------------------
+
+    static int bsFwd(
+            int L,
+            int R,
+            boolean up,
+            int[] defaults
+    ) throws Exception {
+
+        int L1 = L;
+        int L2 = R;
+
+        while (L1 < L2) {
+
+            int M = (L1 + L2) / 2;
+
+            int[] Q1 = defaults.clone();
+
+            for (int i = L; i <= M; i++) {
+                Q1[i] = up ? 1 : 0;
+            }
+
+            for (int i = M + 1; i <= R; i++) {
+                Q1[i] = up ? 0 : 1;
+            }
+
+            if (ask(Q1) == (up ? 1 : 0)) {
+                L2 = M;
+            } else {
+                L1 = M + 1;
+            }
+        }
+
+        return L1;
+    }
+
+    // ------------------------------------------------------------
+    // Binary search reverse
+    // ------------------------------------------------------------
+
+    static int bsRev(
+            int L,
+            int R,
+            boolean up,
+            int[] defaults
+    ) throws Exception {
+
+        int L1 = L;
+        int L2 = R;
+
+        while (L1 < L2) {
+
+            int M = (L1 + L2 + 1) / 2;
+
+            int[] Q1 = defaults.clone();
+
+            for (int i = L; i <= M - 1; i++) {
+                Q1[i] = up ? 0 : 1;
+            }
+
+            for (int i = M; i <= R; i++) {
+                Q1[i] = up ? 1 : 0;
+            }
+
+            if (ask(Q1) == (up ? 1 : 0)) {
+                L1 = M;
+            } else {
+                L2 = M - 1;
+            }
+        }
+
+        return L1;
+    }
+
+    // ------------------------------------------------------------
+    // Main divide and conquer
+    // ------------------------------------------------------------
+
+    static MMT mimicFull(
+            int L,
+            int R,
+            int[] defaults
+    ) throws Exception {
+
+        // One variable
+        if (L == R) {
+            return new MMT(
+                    L,
+                    R,
+                    new ArrayList<>(),
+                    false
+            );
+        }
+
+        // --------------------------------------------------------
+        // Determine whether root is MAX or MIN
+        // --------------------------------------------------------
+
+        int s = bsFwd(
+                L,
+                R,
+                true,
+                defaults
+        );
+
+        int t = bsRev(
+                L,
+                R,
+                true,
+                defaults
+        );
+
+        boolean up = s < t;
+
+        // --------------------------------------------------------
+        // Change all positions to opposite value
+        // --------------------------------------------------------
+
+        int[] updDefaults = defaults.clone();
+
+        for (int i = L; i <= R; i++) {
+            updDefaults[i] = up ? 0 : 1;
+        }
+
+        // --------------------------------------------------------
+        // Find boundary candidates
+        // --------------------------------------------------------
+
+        int mFwd = bsFwd(
+                L,
+                R,
+                up,
+                updDefaults
+        );
+
+        int kFwd = bsFwd(
+                mFwd + 1,
+                R,
+                up,
+                updDefaults
+        );
+
+        int mRev = bsRev(
+                L,
+                R,
+                up,
+                updDefaults
+        );
+
+        int kRev = bsRev(
+                L,
+                mRev - 1,
+                up,
+                updDefaults
+        );
+
+        // --------------------------------------------------------
+        // Prepare forward / reverse queries
+        // --------------------------------------------------------
+
+        int[] gFwd = updDefaults.clone();
+        int[] gRev = updDefaults.clone();
+
+        for (int i = L; i < kFwd; i++) {
+            gFwd[i] = up ? 1 : 0;
+        }
+
+        for (int i = R; i > kRev; i--) {
+            gRev[i] = up ? 1 : 0;
+        }
+
+        int fwdTake = -1;
+        int revTake = -1;
+        int cut = -1;
+
+        // --------------------------------------------------------
+        // Find actual split
+        // --------------------------------------------------------
+
+        for (int i = 0; i < INF; i++) {
+
+            // -------------------------------
+            // Forward
+            // -------------------------------
+
+            gFwd[L + i] = up ? 0 : 1;
+
+            if (ask(gFwd) != (up ? 1 : 0)) {
+
+                gFwd[L + i] = up ? 1 : 0;
+
+                fwdTake = L + i;
+            }
+
+            int[] checkFwd = gFwd.clone();
+
+            for (int j = L + i + 1; j <= R; j++) {
+                checkFwd[j] = up ? 0 : 1;
+            }
+
+            if (ask(checkFwd) == (up ? 1 : 0)) {
+
+                cut = fwdTake;
+
+                break;
+            }
+
+            // -------------------------------
+            // Reverse
+            // -------------------------------
+
+            gRev[R - i] = up ? 0 : 1;
+
+            if (ask(gRev) != (up ? 1 : 0)) {
+
+                gRev[R - i] = up ? 1 : 0;
+
+                revTake = R - i;
+            }
+
+            int[] checkRev = gRev.clone();
+
+            for (int j = L; j <= R - i - 1; j++) {
+                checkRev[j] = up ? 0 : 1;
+            }
+
+            if (ask(checkRev) == (up ? 1 : 0)) {
+
+                cut = revTake - 1;
+
+                break;
+            }
+        }
+
+        // --------------------------------------------------------
+        // Left defaults
+        // --------------------------------------------------------
+
+        int[] leftDefaults = updDefaults.clone();
+
+        for (int i = cut + 1; i <= R; i++) {
+            leftDefaults[i] = up ? 0 : 1;
+        }
+
+        // --------------------------------------------------------
+        // Right defaults
+        // --------------------------------------------------------
+
+        int[] rightDefaults = updDefaults.clone();
+
+        for (int i = L; i <= cut; i++) {
+            rightDefaults[i] = up ? 0 : 1;
+        }
+
+        // --------------------------------------------------------
+        // Recursion
+        // --------------------------------------------------------
+
+        ArrayList<MMT> subdivisions =
+                new ArrayList<>();
+
+        subdivisions.add(
+                mimicFull(
+                        L,
+                        cut,
+                        leftDefaults
+                )
+        );
+
+        subdivisions.add(
+                mimicFull(
+                        cut + 1,
+                        R,
+                        rightDefaults
+                )
+        );
+
+        return new MMT(
+                L,
+                R,
+                subdivisions,
+                up
+        );
+    }
+
+    // ------------------------------------------------------------
+    // Recover
+    // ------------------------------------------------------------
+
+    static MMT recover(int n) throws Exception {
+
+        int[] defaults = new int[n + 1];
+
+        return mimicFull(
+                1,
+                n,
+                defaults
+        );
+    }
+
+    // ------------------------------------------------------------
+    // Main
+    // ------------------------------------------------------------
+
+    public static void main(String[] args) throws Exception {
+
+        int T = getInt();
+
+        while (T-- > 0) {
+
+            int n = getInt();
+
+            MMT root = recover(n);
+
+            // Finished learning
+            System.out.println("!");
+            System.out.flush();
+
+            while (true) {
+
+                int[] q = new int[n + 1];
+
+                boolean finished = false;
+
+                for (int i = 1; i <= n; i++) {
+
+                    int x = getInt();
+
+                    if (x == 0) {
+                        finished = true;
+                        break;
+                    }
+
+                    q[i] = x;
+                }
+
+                if (finished) {
+                    break;
+                }
+
+                int ans = root.eval(q);
+
+                System.out.println(ans);
+                System.out.flush();
+            }
+        }
+    }
+}
